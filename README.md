@@ -59,4 +59,4 @@ go run main.go migrate --up
 go run main.go migrate --down
 ```
 * example.
-example [main.go](https://github.com/hamdiBouhani/mongodb-data-migrate/example).
+example [main.go](https://github.com/hamdiBouhani/mongodb-data-migrate/tree/main/example).
