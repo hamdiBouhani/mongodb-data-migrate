@@ -2,7 +2,7 @@ package scripts
 
 import (
 	"context"
-	"mongodb-data-migrate/internal"
+	"mongodb-data-migrate/example/internal"
 	"mongodb-data-migrate/migrate"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"

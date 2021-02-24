@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"mongodb-data-migrate/internal"
+	"mongodb-data-migrate/example/internal"
+	_ "mongodb-data-migrate/example/scripts"
 	"mongodb-data-migrate/migrate"
-	_ "mongodb-data-migrate/scripts"
 	"os"
 	"time"
 

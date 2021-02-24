@@ -56,6 +56,7 @@ import (
 ```shell
 go run main.go migrate --init
 go run main.go migrate --up
+go run main.go migrate --down
 ```
 * example.
-main.go [main](https://github.com/hamdiBouhani/mongodb-data-migrate/blob/main/main.go).
+example [main.go](https://github.com/hamdiBouhani/mongodb-data-migrate/example).
