@@ -54,7 +54,7 @@ import (
 
 * Run migrations.
 ```shell
-go run main.go migrate --init
+go run main.go migrate --new --desc="create_user"
 go run main.go migrate --up
 go run main.go migrate --down
 ```

@@ -91,25 +91,21 @@ func (m *Migrate) Version() (uint64, string, error) {
 
 	var recs []versionRecord
 	// find record with greatest id (assuming it`s latest also)
-	/*err := m.db.C(m.migrationsCollection).Find(nil).Sort("-_id").One(&rec)
-	if err == mgo.ErrNotFound {
-		return 0, "", nil
-	}
+	ctx := context.Background()
+	findOptions := options.Find()
+	// Sort by `version` field descending
+	findOptions.SetSort(bson.D{{"version", -1}})
+	findOptions.SetLimit(1)
+
+	res, err := m.db.Database(m.dbName).Collection("migrations").Find(ctx, bson.M{}, findOptions)
 	if err != nil {
 		return 0, "", err
-	}*/
-	ctx := context.Background()
-	limit := int64(1)
-	res, err := m.db.Database(m.dbName).Collection(m.migrationsCollection).Find(ctx, bson.M{}, &options.FindOptions{Sort: "-_id", Limit: &limit})
-	if err != nil {
-		return 0, "", nil
 	}
 
 	err = res.All(ctx, &recs)
 	if err != nil {
-		return 0, "", nil
+		return 0, "", err
 	}
-
 	if len(recs) > 0 {
 		return recs[0].Version, recs[0].Description, nil
 	}

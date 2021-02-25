@@ -74,7 +74,6 @@ func internalRegister(up, down MigrationFunc, skip int) error {
 //		})
 //	 }
 func Register(up, down MigrationFunc) error {
-	fmt.Printf("up: %v down: %v \n", up, down)
 	return internalRegister(up, down, 2)
 }
 
