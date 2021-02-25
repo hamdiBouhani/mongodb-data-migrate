@@ -1,3 +1,3 @@
 package internal
 
-const DB = "mDB-test"
+const DB = "megrate_db"

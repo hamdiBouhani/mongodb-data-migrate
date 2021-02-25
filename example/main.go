@@ -18,10 +18,11 @@ import (
 
 var commandMigrate *cobra.Command
 var (
-	argDsn        string
-	up            bool
-	down          bool
-	initMigration bool
+	argDsn       string
+	description  string
+	up           bool
+	down         bool
+	newMigration bool
 )
 
 func init() {
@@ -37,9 +38,10 @@ func init() {
 		},
 	}
 	commandMigrate.Flags().StringVar(&argDsn, "dsn", "mongodb://localhost:27017", "db url")
+	commandMigrate.Flags().StringVar(&description, "desc", "latest", "migration description")
 	commandMigrate.Flags().BoolVar(&up, "up", false, "migrate up")
 	commandMigrate.Flags().BoolVar(&down, "down", false, "migrate down")
-	commandMigrate.Flags().BoolVar(&initMigration, "init", false, "init migration")
+	commandMigrate.Flags().BoolVar(&newMigration, "new", false, "New migration")
 
 }
 
@@ -59,10 +61,14 @@ func migrateDB(cmd *cobra.Command, args []string) error {
 	migrate.SetMigrationsCollection("migrations")
 	migrate.SetLogger(log.New(os.Stdout, "INFO: ", 0))
 
-	if initMigration {
+	for index, v := range migrate.GetMigrations() {
+		log.Printf("migration :%d\t description :%s\tmigrations version :%d\n", index, v.Description, v.Version)
+	}
 
-		fName := fmt.Sprintf("./scripts/%s_%s.go", time.Now().Format("20060102150405"), os.Args[2])
-		from, err := os.Open("./scripts/init.go")
+	if newMigration {
+
+		fName := fmt.Sprintf("./scripts/%s_%s.go", time.Now().Format("20060102150405"), description)
+		from, err := os.Open("./scripts/latest_migration.go")
 		if err != nil {
 			log.Fatal("Should be: new description-of-migration")
 		}
@@ -80,11 +86,13 @@ func migrateDB(cmd *cobra.Command, args []string) error {
 		}
 		log.Printf("New migration created: %s\n", fName)
 	} else if up {
+		fmt.Println("up")
 		err := migrate.Up(migrate.AllAvailable)
 		if err != nil {
 			log.Fatal(err.Error())
 		}
 	} else if down {
+		fmt.Println("down")
 		err := migrate.Down(migrate.AllAvailable)
 		if err != nil {
 			log.Fatal(err.Error())
