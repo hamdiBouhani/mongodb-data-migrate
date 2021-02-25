@@ -93,8 +93,8 @@ func (m *Migrate) Version() (uint64, string, error) {
 	// find record with greatest id (assuming it`s latest also)
 	ctx := context.Background()
 	findOptions := options.Find()
-	// Sort by `version` field descending
-	findOptions.SetSort(bson.D{{"version", -1}})
+	// Sort by `_id` field descending
+	findOptions.SetSort(bson.D{{"_id", -1}})
 	findOptions.SetLimit(1)
 
 	res, err := m.db.Database(m.dbName).Collection("migrations").Find(ctx, bson.M{}, findOptions)

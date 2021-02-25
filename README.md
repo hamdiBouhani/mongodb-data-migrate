@@ -54,9 +54,9 @@ import (
 
 * Run migrations.
 ```shell
-go run main.go migrate --new --desc="create_user"
-go run main.go migrate --up
-go run main.go migrate --down
+go run example/main.go migrate --new --desc="create_user"
+go run example/main.go migrate --up
+go run example/main.go migrate --down
 ```
 * example.
 example [main.go](https://github.com/hamdiBouhani/mongodb-data-migrate/tree/main/example).
