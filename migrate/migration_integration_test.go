@@ -216,7 +216,6 @@ func TestDownMigrations(t *testing.T) {
 				if err != nil {
 					return err
 				}
-
 				return nil
 			},
 			Down: func(db *mongo.Client) error {
@@ -273,4 +272,95 @@ func TestDownMigrations(t *testing.T) {
 		}
 	}
 
+}
+
+func TestPartialUpMigrations(t *testing.T) {
+	defer cleanup(client)
+	migrate := NewMigrate(testDB, client,
+		Migration{Version: 1, Description: "hello", Up: func(db *mongo.Client) error {
+			//return db.C(testCollection).Insert(bson.M{"hello": "world"})
+			_collection := db.Database(testDB).Collection(testCollection)
+			_, err := _collection.InsertOne(context.Background(), bson.M{"hello": "world"})
+			if err != nil {
+				return err
+			}
+			return nil
+		}},
+		Migration{Version: 2, Description: "world", Up: func(db *mongo.Client) error {
+			//return db.C(testCollection).EnsureIndex(mgo.Index{Name: "test_idx", Key: []string{"hello"}})
+			indexOptions := options.Index()
+			indexOptions.SetName("test_idx")
+			_collection := db.Database(testDB).Collection(testCollection)
+			_, err := _collection.Indexes().CreateOne(context.Background(), mongo.IndexModel{
+				Keys: bson.M{
+					"hello": 1, // index in ascending order
+				}, Options: indexOptions,
+			})
+			if err != nil {
+				return err
+			}
+			return nil
+		}},
+		Migration{Version: 3, Description: "shouldn`t be applied", Up: func(db *mongo.Client) error {
+			//return db.C(testCollection).Insert(bson.M{"a": "b"})
+			_collection := db.Database(testDB).Collection(testCollection)
+			_, err := _collection.InsertOne(context.Background(), bson.M{"a": "b"})
+			if err != nil {
+				return err
+			}
+			return nil
+		}},
+	)
+	if err := migrate.Up(2); err != nil {
+		t.Errorf("Unexpected error: %v", err)
+		return
+	}
+
+	version, description, err := migrate.Version()
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+		return
+	}
+	if version != 2 || description != "world" {
+		t.Errorf("Unexpected version/description %v %v", version, description)
+		return
+	}
+
+	doc := bson.M{}
+	_collection := client.Database(testDB).Collection(testCollection)
+	err = _collection.FindOne(context.Background(), bson.M{"hello": "world"}).Decode(&doc)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+		return
+	}
+
+	if doc["hello"].(string) != "world" {
+		t.Errorf("Unexpected data")
+		return
+	}
+
+	indexes, err := _collection.Indexes().List(context.Background())
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+		return
+	}
+	for indexes.Next(context.Background()) {
+		d := bson.Raw{}
+		if err := indexes.Decode(&d); err != nil {
+			t.Errorf("Unexpected error: %v", err)
+			return
+		}
+		v := d.Lookup("name")
+		if v.StringValue() == "test_idx" {
+			goto okIndex
+		}
+	}
+	t.Errorf("Expected index not found")
+okIndex:
+	err = _collection.FindOne(context.Background(), bson.M{"a": "b"}).Decode(&bson.M{})
+	if err != mongo.ErrNoDocuments {
+		t.Errorf("Unexpected error: %v", err)
+		return
+
+	}
 }
