@@ -224,7 +224,6 @@ func TestDownMigrations(t *testing.T) {
 				if err != nil {
 					return err
 				}
-
 				return nil
 			},
 		})
@@ -363,4 +362,87 @@ okIndex:
 		return
 
 	}
+}
+
+func TestPartialDownMigrations(t *testing.T) {
+	defer cleanup(client)
+	migrate := NewMigrate(testDB, client,
+		Migration{Version: 1, Description: "hello", Up: func(db *mongo.Client) error {
+			_collection := db.Database(testDB).Collection(testCollection)
+			_, err := _collection.InsertOne(context.Background(), bson.M{"hello": "world"})
+			if err != nil {
+				return err
+			}
+			return nil
+		}, Down: func(db *mongo.Client) error {
+			_collection := db.Database(testDB).Collection(testCollection)
+			_, err := _collection.DeleteOne(context.Background(), bson.M{"hello": "world"})
+			if err != nil {
+				return err
+			}
+			return nil
+		}},
+		Migration{Version: 2, Description: "world", Up: func(db *mongo.Client) error {
+			indexOptions := options.Index()
+			indexOptions.SetName("test_idx")
+			_collection := db.Database(testDB).Collection(testCollection)
+			_, err := _collection.Indexes().CreateOne(context.Background(), mongo.IndexModel{
+				Keys: bson.M{
+					"hello": 1, // index in ascending order
+				}, Options: indexOptions,
+			})
+			if err != nil {
+				return err
+			}
+			return nil
+		}, Down: func(db *mongo.Client) error {
+			_collection := db.Database(testDB).Collection(testCollection)
+			_, err := _collection.Indexes().DropOne(context.Background(), "test_idx")
+			if err != nil {
+				return err
+			}
+			return nil
+		}},
+		Migration{Version: 3, Description: "next", Up: func(db *mongo.Client) error {
+			_collection := db.Database(testDB).Collection(testCollection)
+			_, err := _collection.InsertOne(context.Background(), bson.M{"a": "b"})
+			if err != nil {
+				return err
+			}
+			return nil
+		}, Down: func(db *mongo.Client) error {
+			_collection := db.Database(testDB).Collection(testCollection)
+			_, err := _collection.DeleteOne(context.Background(), bson.M{"a": "b"})
+			if err != nil {
+				return err
+			}
+			return nil
+		}},
+	)
+	if err := migrate.Up(AllAvailable); err != nil {
+		t.Errorf("Unexpected error: %v", err)
+		return
+	}
+
+	_collection := client.Database(testDB).Collection(testCollection)
+	err := _collection.FindOne(context.Background(), bson.M{"a": "b"}).Decode(&bson.M{})
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+		return
+	}
+
+	if err := migrate.Down(1); err != nil {
+		t.Errorf("Unexpected error: %v", err)
+		return
+	}
+	version, description, err := migrate.Version()
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+		return
+	}
+	if version != 2 || description != "world" {
+		t.Errorf("Unexpected version/description: %v %v", version, description)
+		return
+	}
+
 }
