@@ -444,5 +444,9 @@ func TestPartialDownMigrations(t *testing.T) {
 		t.Errorf("Unexpected version/description: %v %v", version, description)
 		return
 	}
-
+	err = _collection.FindOne(context.Background(), bson.M{"a": "b"}).Decode(&bson.M{})
+	if err != mongo.ErrNoDocuments {
+		t.Errorf("Unexpected error: %v", err)
+		return
+	}
 }
