@@ -255,29 +255,22 @@ func TestDownMigrations(t *testing.T) {
 
 	}
 
-	// cur, err := _collection.Indexes().List(context.Background())
-	// if err != nil {
-	// 	t.Errorf("Unexpected error: %v", err)
-	// 	return
-	// }
-	// for cur.Next(context.Background()) {
-	// 	index := bson.D{}
-	// 	cur.Decode(&index)
-	// 	log.Println(fmt.Sprintf("index found %v", index))
-	// }
-
-	/*
-			indexes, err := mongo.C(testCollection).Indexes()
-		if err != nil {
+	cur, err := _collection.Indexes().List(context.Background())
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+		return
+	}
+	for cur.Next(context.Background()) {
+		d := bson.Raw{}
+		if err := cur.Decode(&d); err != nil {
 			t.Errorf("Unexpected error: %v", err)
 			return
 		}
-		for _, index := range indexes {
-			if index.Name == "test_idx" {
-				t.Errorf("Index unexpectedly found")
-				return
-			}
+		v := d.Lookup("name")
+		if v.StringValue() == "test_idx" {
+			t.Errorf("Index unexpectedly found")
+			return
 		}
-	*/
+	}
 
 }
